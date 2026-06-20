@@ -55,7 +55,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ==================== DAST - OWASP ZAP ====================
+ # ==================== DAST - OWASP ZAP ====================
       - name: Run application container
         run: |
           docker run -d --name app -p 3000:3000 \
@@ -71,23 +71,11 @@ jobs:
           done
           echo "La app no respondió a tiempo"; docker logs app; exit 1
 
-      - name: DAST scan with OWASP ZAP (baseline)
-        run: |
-          mkdir -p zap-report && chmod 777 zap-report
-          docker run --rm --network host \
-            -v ${{ github.workspace }}/zap-report:/zap/wrk/:rw \
-            ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py \
-              -t http://localhost:3000 \
-              -r zap-report.html \
-              -J zap-report.json \
-              -w zap-report.md \
-            || true
-
-      - name: Upload ZAP DAST report
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: DAST scan with OWASP ZAP
+        uses: zaproxy/action-baseline@v0.15.0
         with:
-          name: zap-dast-report
-          path: zap-report/
-          retention-days: 30
+          target: 'http://localhost:3000'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_action: false
+          allow_issue_writing: false
+          artifact_name: zap-dast-report
